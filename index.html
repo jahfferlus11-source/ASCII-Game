@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>ASCII SHOOTER - SPECIALS</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#050a05;color:#00ff41;font-family:'Share Tech Mono',monospace;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:12px}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,65,.015) 2px,rgba(0,255,65,.015) 4px);pointer-events:none;z-index:999}
+#wrap{width:100%;max-width:700px}
+@keyframes flicker{0%,94%,100%{opacity:1}95%{opacity:.6}96%{opacity:1}97%{opacity:.4}98%{opacity:1}}
+
+/* HUD */
+#hud{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border:1px solid #1a3a1a;background:#080f08;border-bottom:none;font-size:12px;flex-wrap:wrap;gap:4px}
+.hl{color:#00aa2b;font-size:10px;letter-spacing:2px;margin-right:3px}
+#coin-hud{color:#ffd700;font-size:13px}
+#admin-btn{background:transparent;border:none;cursor:pointer;color:#bb44ff;font-size:17px;padding:0 4px;line-height:1;display:none}
+
+/* SCREEN */
+#screen{background:#080f08;border:1px solid #1a3a1a;padding:6px 8px;font-size:13px;line-height:1.4;letter-spacing:.05em;position:relative;outline:none;min-height:360px}
+#screen pre{margin:0;white-space:pre;font-family:inherit;font-size:inherit;line-height:inherit;letter-spacing:inherit}
+
+/* OVERLAY */
+#ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;background:rgba(5,10,5,.96);z-index:10;padding:28px 32px;gap:0}
+#ov.hidden{display:none}
+#ov h2{font-family:'VT323',monospace;font-size:44px;letter-spacing:6px;text-shadow:0 0 20px #00ff41;margin-bottom:4px;animation:flicker 8s infinite}
+#ov p{font-size:11px;color:#00aa2b;letter-spacing:3px;margin-bottom:20px}
+
+/* BUTTONS */
+.btn{font-family:'Share Tech Mono',monospace;font-size:15px;letter-spacing:3px;background:transparent;border:1px solid;padding:5px 18px;cursor:pointer;transition:background .15s}
+.btn.g{color:#00ff41;border-color:#00ff41}.btn.g:hover{background:rgba(0,255,65,.1)}
+.btn.a{color:#ffaa00;border-color:#ffaa00}.btn.a:hover{background:rgba(255,170,0,.1)}
+.btn.b{color:#00aaff;border-color:#00aaff}.btn.b:hover{background:rgba(0,170,255,.1)}
+.btn.p{color:#bb44ff;border-color:#bb44ff}.btn.p:hover{background:rgba(187,68,255,.1)}
+.btn.gold{color:#ffd700;border-color:#ffd700}.btn.gold:hover{background:rgba(255,215,0,.1)}
+
+/* BOTTOM */
+#bottom{display:flex;justify-content:space-between;padding:5px 10px;border:1px solid #1a3a1a;background:#080f08;border-top:none;font-size:10px;color:#00aa2b;flex-wrap:wrap;gap:4px}
+#msg-bar{color:#ffaa00;font-size:12px;letter-spacing:2px;min-height:16px;text-align:right}
+kbd{background:#003a0f;color:#00ff41;border:1px solid #00aa2b;border-radius:2px;padding:0 4px;font-family:inherit;font-size:10px}
+
+/* SHOP */
+#shop-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;align-items:center;justify-content:center}
+.shop-box{background:#080f08;border:1px solid #ffd700;padding:24px 28px;min-width:360px;max-width:520px;width:92%;font-family:'Share Tech Mono',monospace;max-height:90vh;overflow-y:auto}
+.shop-title{color:#ffd700;font-size:20px;letter-spacing:4px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.shop-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #1a3a1a;gap:8px}
+.shop-item:last-child{border-bottom:none}
+.shop-info{flex:1}
+.shop-name{color:#00ff41;font-size:13px;letter-spacing:2px}
+.shop-desc{color:#00aa2b;font-size:10px;letter-spacing:1px;margin-top:2px}
+.shop-skin{color:#00aaff;font-size:10px;letter-spacing:1px;margin-top:1px}
+.shop-price{color:#ffd700;font-size:13px;white-space:nowrap;margin:0 8px}
+.shop-buy{font-size:11px;padding:3px 10px;letter-spacing:2px}
+.shop-owned{color:#00aa2b;font-size:11px;letter-spacing:2px}
+
+/* RANKING */
+#rank-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;align-items:center;justify-content:center}
+.rank-box{background:#080f08;border:1px solid #00aaff;padding:24px 28px;min-width:340px;max-width:480px;width:92%;font-family:'Share Tech Mono',monospace}
+.rank-title{color:#00aaff;font-size:18px;letter-spacing:4px;margin-bottom:14px}
+.rank-row{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid #0a1a0a;font-size:12px}
+.rank-row:last-child{border-bottom:none}
+.rank-pos{color:#ffaa00;min-width:24px}
+.rank-name{color:#00ff41;flex:1}
+.rank-pts{color:#ffd700;text-align:right}
+.rank-mode{color:#00aa2b;font-size:10px;text-align:right;min-width:70px}
+
+/* ADMIN */
+#admin-login,#admin-panel{display:none;position:fixed;inset:0;background:rgba(0,0,0,.87);z-index:400;align-items:center;justify-content:center;overflow-y:auto}
+.abox{background:#080f08;border:1px solid #bb44ff;padding:24px 28px;min-width:320px;max-width:480px;width:92%;font-family:'Share Tech Mono',monospace;color:#00ff41}
+.abox.green{border-color:#00ff41}
+.arow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.albl{color:#00aa2b;font-size:11px;letter-spacing:2px;min-width:170px}
+.ainp{background:#050a05;border:1px solid #00ff41;color:#00ff41;font-family:'Share Tech Mono',monospace;font-size:13px;padding:4px 8px;width:100px;outline:none}
+.ainp:focus{border-color:#bb44ff}
+
+/* HS panel */
+#hs{margin-top:8px;border:1px solid #1a3a1a;background:#080f08;padding:6px 10px;font-size:11px;color:#00aa2b}
+#hs .ht{color:#ffaa00;font-size:12px;letter-spacing:3px;margin-bottom:4px}
+.hr{display:flex;justify-content:space-between;gap:16px}.hv{color:#00ff41}
+
+/* coin popup */
+.cpop{position:absolute;pointer-events:none;font-size:12px;color:#ffd700;animation:cpopup .8s ease forwards;font-family:'Share Tech Mono',monospace}
+@keyframes cpopup{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-24px)}}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="hud">
+    <span><span class="hl">PTS</span><span id="sc">0</span></span>
+    <span><span class="hl">VIDAS</span><span id="lv" style="color:#ff5555">♥♥•</span></span>
+    <span><span class="hl">ESCUDO</span><span id="sh" style="color:#bb44ff">---</span></span>
+    <span id="coin-hud"><span class="hl">🪙</span><span id="coins">0</span></span>
+    <span><span class="hl">NÍVEL</span><span id="nl">1</span></span>
+    <span><span class="hl">WAVE</span><span id="wv">1</span></span>
+    <span><span class="hl">MODO</span><span id="md" style="color:#ffaa00">---</span></span>
+    <span><span class="hl">ARMA</span><span id="skin-name" style="color:#00aaff">PADRÃO</span></span>
+    <button id="admin-btn" onclick="openAdminLogin()" title="Admin" aria-label="Admin">🛡</button>
+  </div>
+
+  <div id="screen" tabindex="0">
+    <pre id="pre"></pre>
+    <div id="ov">
+      <h2>ASCII SHOOTER</h2>
+      <p>SELECIONE O MODO</p>
+      <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+        <button class="btn g" onclick="startGame('normal')">[ NORMAL ]</button>
+        <button class="btn a" onclick="startGame('survival')">[ SOBREVIVÊNCIA ]</button>
+        <button class="btn b" onclick="startGame('zen')">[ ZEN ]</button>
+        <button class="btn p" onclick="startGame('coop')">[ CO-OP ]</button>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button class="btn gold" onclick="openShop()">[ 🪙 LOJA ]</button>
+          <button class="btn b" onclick="openRanking()">[ 🏆 RANKING ]</button>
+        </div>
+      </div>
+      <div id="ov-coins" style="position:absolute;bottom:16px;right:20px;color:#ffd700;font-size:13px;letter-spacing:2px">🪙 <span id="ov-coin-val">0</span> moedas</div>
+    </div>
+  </div>
+
+  <div id="bottom">
+    <div>P1: <kbd>W</kbd>/<kbd>S</kbd> mover &nbsp;<kbd>ESPAÇO</kbd> atirar &nbsp;|&nbsp; P2: <kbd>↑</kbd>/<kbd>↓</kbd> <kbd>ENTER</kbd> &nbsp;|&nbsp; <kbd>P</kbd> pausa &nbsp;<kbd>ESC</kbd> menu</div>
+    <div id="msg-bar"></div>
+  </div>
+
+  <div id="hs"><div class="ht">▶ RECORDES</div><div id="hsr"></div></div>
+</div>
+
+<div id="shop-modal">
+  <div class="shop-box">
+    <div class="shop-title">
+      <span>🪙 LOJA</span>
+      <span style="color:#ffd700;font-size:14px">🪙 <span id="shop-coins">0</span></span>
+    </div>
+    <div id="shop-items"></div>
+    <div style="margin-top:14px"><button class="btn g" onclick="closeShop()">[ FECHAR ]</button></div>
+  </div>
+</div>
+
+<div id="rank-modal">
+  <div class="rank-box">
+    <div class="rank-title">🏆 RANKING GLOBAL</div>
+    <div id="rank-rows"></div>
+    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn b" onclick="closeRanking()">[ FECHAR ]</button>
+      <button class="btn a" onclick="clearRanking()">[ LIMPAR ]</button>
+    </div>
+  </div>
+</div>
+
+<div id="admin-login">
+  <div class="abox">
+    <div style="color:#bb44ff;font-size:16px;letter-spacing:4px;margin-bottom:14px">🛡 ACESSO RESTRITO</div>
+    <div style="font-size:11px;color:#00aa2b;margin-bottom:6px;letter-spacing:2px">SENHA:</div>
+    <input id="admin-pw" type="password" placeholder="senha..." class="ainp" style="width:100%;font-size:14px;padding:6px 10px" onkeydown="if(event.key==='Enter')checkAdmin()">
+    <div id="admin-err" style="color:#ff3333;font-size:11px;min-height:16px;margin-top:5px;letter-spacing:2px"></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn p" onclick="checkAdmin()">[ ENTRAR ]</button>
+      <button class="btn g" onclick="closeAdminLogin()">[ CANCELAR ]</button>
+    </div>
+  </div>
+</div>
+
+<div id="admin-panel">
+  <div class="abox green" style="max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span style="font-size:16px;letter-spacing:4px">🛡 PAINEL ADMIN</span>
+      <button class="btn g" style="font-size:11px;padding:2px 8px" onclick="closeAdminPanel()">[ X ]</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="arow"><label class="albl">PONTOS</label><input class="ainp" id="a-score" type="number" min="0"></div>
+      <div class="arow"><label class="albl">MOEDAS</label><input class="ainp" id="a-coins" type="number" min="0"></div>
+      <div class="arow"><label class="albl">VIDAS</label><input class="ainp" id="a-lives" type="number" min="0" max="99"></div>
+      <div class="arow"><label class="albl">NÍVEL</label><input class="ainp" id="a-level" type="number" min="1" max="99"></div>
+      <div class="arow"><label class="albl">WAVE</label><input class="ainp" id="a-wave" type="number" min="1" max="99"></div>
+      <div class="arow"><label class="albl">ESCUDO P1 (frames)</label><input class="ainp" id="a-shield" type="number" min="0" max="9999"></div>
+      <div class="arow"><label class="albl">TIRO RÁPIDO (frames)</label><input class="ainp" id="a-rapid" type="number" min="0" max="9999"></div>
+      <div class="arow"><label class="albl">TIRO DUPLO (frames)</label><input class="ainp" id="a-double" type="number" min="0" max="9999"></div>
+      <div class="arow"><label class="albl">VELOC. CAIXAS</label><input class="ainp" id="a-boxspeed" type="number" min="0.01" max="1" step="0.01"></div>
+      <div class="arow"><label class="albl">MAX CAIXAS TELA</label><input class="ainp" id="a-maxbox" type="number" min="1" max="10"></div>
+      <div class="arow"><label class="albl">MODO</label>
+        <select id="a-mode" class="ainp" style="width:auto">
+          <option value="normal">NORMAL</option>
+          <option value="survival">SOBREVIVÊNCIA</option>
+          <option value="zen">ZEN</option>
+          <option value="coop">CO-OP</option>
+        </select>
+      </div>
+      <div class="arow" style="flex-direction:column;align-items:flex-start;gap:6px">
+        <label class="albl">AÇÕES RÁPIDAS</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn a" style="font-size:11px;padding:3px 10px" onclick="adminNukeBoxes()">[ 💥 EXPLODIR TUDO ]</button>
+          <button class="btn gold" style="font-size:11px;padding:3px 10px" onclick="adminGiveCoins()">[ 🪙 +100 MOEDAS ]</button>
+          <button class="btn b" style="font-size:11px;padding:3px 10px" onclick="adminGiveShield()">[ 🛡 ESCUDO MAX ]</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">
+        <button class="btn g" onclick="adminApply()">[ APLICAR ]</button>
+        <button class="btn a" onclick="adminReset()">[ RESETAR JOGO ]</button>
+        <button class="btn p" onclick="closeAdminPanel()">[ FECHAR ]</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// CONSTANTES
+// ══════════════════════════════════════════════════════
+const C = 54, R = 20;
+const GX = C - 7; 
+
+// SKINS DE ARMA  [sprite 3 linhas, nome, custo, id, habilidade]
+const SKINS = [
+  { id:'default', name:'PADRÃO',   cost:0,   sprite:['\\O/', ' |>', '/|\\ '], spec: '20% chance de Dano Dobrado' },
+  { id:'laser',   name:'LASER',    cost:50,  sprite:['\\O/', ' |#', '/|\\ '], spec: 'Tiro Ultra Rápido e Perfurante' },
+  { id:'rocket',  name:'FOGUETE',  cost:120, sprite:[')O(', '>==', ')O('], spec: 'Dano em Área (explode acima/abaixo)' },
+  { id:'plasma',  name:'PLASMA',   cost:200, sprite:['(O)', '~|~', '(O)'], spec: 'Escudo Automático a cada 5 abates' },
+  { id:'sniper',  name:'SNIPER',   cost:300, sprite:['[O]', '-|=', '[O]'], spec: 'Tiro Crítico Instantâneo (50% chance)' },
+];
+
+// SPRITES
+const S_BOX   = ['.---.','|   |',"'---'"];
+const S_COIN  = ['.---.','| @ |',"'---'"];  
+const S_ARM   = ['.###.','|###|',"'###'"];
+const S_BOSS  = ['.-------.','| CHEFE |',"'-------'"];
+const S_DEAD  = [' \\*/ ',' -X- ',' /*\\ '];
+const S_EXPL  = [' *** ','*###*',' *** '];
+
+// ══════════════════════════════════════════════════════
+// PERSISTÊNCIA
+// ══════════════════════════════════════════════════════
+function lsGet(k,def){ try{ const v=localStorage.getItem(k); return v===null?def:JSON.parse(v); }catch(e){return def;} }
+function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+
+let totalCoins   = lsGet('coins_total', 0);
+let ownedSkins   = lsGet('owned_skins', ['default']);
+let activeSkin   = lsGet('active_skin', 'default');
+let rankingData  = lsGet('ranking', []);
+
+function saveCoins(){ lsSet('coins_total',totalCoins); }
+function saveSkins(){ lsSet('owned_skins',ownedSkins); lsSet('active_skin',activeSkin); }
+function saveRanking(){ lsSet('ranking',rankingData); }
+
+function getSkinSprite(){
+  const s=SKINS.find(s=>s.id===activeSkin)||SKINS[0];
+  return s.sprite;
+}
+
+// ══════════════════════════════════════════════════════
+// ESTADO
+// ══════════════════════════════════════════════════════
+let G, timer, adminMaxBoxes=3, adminUnlocked=false;
+
+function newGame(mode){
+  return {
+    mode, frame:0, over:false, paused:false,
+    p1:{ y:9, shield:0, rapid:0, double:0, plasmaKills:0 },
+    p2:{ y:13, shield:0, rapid:0, double:0, plasmaKills:0 },
+    bullets:[], boxes:[], powerups:[], coins:[],
+    score:0, sessionCoins:0,
+    lives: mode==='zen'?99:3,
+    level:1, wave:1, kills:0, killGoal:5,
+    lastSpawn:-999, msg:'', msgT:0,
+    combo:0, comboT:0,
+  };
+}
+
+// ══════════════════════════════════════════════════════
+// GRID
+// ══════════════════════════════════════════════════════
+function grid(){ return Array.from({length:R},()=>Array(C).fill(' ')); }
+function put(g,row,col,ch){ if(row>=0&&row<R&&col>=0&&col<C) g[row][col]=ch; }
+function stamp(g,row,col,lines){ lines.forEach((ln,dr)=>[...ln].forEach((ch,dc)=>put(g,row+dr,col+dc,ch))); }
+
+// ══════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════
+function draw(){
+  if(!G) return;
+  const g=grid();
+
+  for(let c=0;c<C;c++){ g[0][c]='═'; g[R-1][c]='═'; }
+  for(let r=0;r<R;r++){ g[r][0]='║'; g[r][C-1]='║'; }
+  g[0][0]='╔'; g[0][C-1]='╗'; g[R-1][0]='╚'; g[R-1][C-1]='╝';
+
+  const y1=clamp(G.p1.y,1,R-4);
+  stamp(g,y1,GX,getSkinSprite());
+  if(G.p1.shield>0){ put(g,y1+1,GX-1,'['); put(g,y1+1,GX+3,']'); }
+
+  if(G.mode==='coop'){
+    const y2=clamp(G.p2.y,1,R-4);
+    stamp(g,y2,GX-2,['\\O\\','=| ','\\|/']);
+  }
+
+  G.coins.forEach(cn=>{
+    const cy=Math.round(cn.y);
+    if(cy>=1&&cy<R-1) put(g,cy,cn.x,'¢');
+  });
+
+  G.powerups.forEach(p=>{
+    const py=Math.round(p.y);
+    if(py>=1&&py<R-1){ put(g,py,p.x,'['); put(g,py,p.x+1,p.type[0].toUpperCase()); put(g,py,p.x+2,']'); }
+  });
+
+  G.boxes.forEach(box=>{
+    const by=Math.round(box.y);
+    let spr;
+    if(box.dead>0)         spr = box.dead>6 ? S_EXPL : S_DEAD;
+    else if(box.type==='boss') spr = S_BOSS;
+    else if(box.coin)      spr = S_COIN;
+    else if(box.hp>1)      spr = S_ARM;
+    else                   spr = S_BOX;
+    stamp(g,by,box.x,spr);
+    if(box.type==='boss'&&!box.dead){
+      const bar=Math.round((box.hp/box.maxHp)*7);
+      const bs='['+'#'.repeat(bar)+'.'.repeat(7-bar)+']';
+      bs.split('').forEach((ch,i)=>put(g,by+3,box.x+i,ch));
+    }
+  });
+
+  G.bullets.forEach(b=>{ if(b.x>=1&&b.x<C-1&&b.y>=1&&b.y<R-1) put(g,b.y,b.x, activeSkin === 'laser' ? '═' : '─'); });
+
+  if(G.combo>1&&G.comboT>0){
+    const s='x'+G.combo+'COMBO'; s.split('').forEach((ch,i)=>put(g,1,2+i,ch));
+  }
+
+  if(G.paused){
+    const ps='[ PAUSADO ]'; ps.split('').forEach((ch,i)=>put(g,Math.floor(R/2),Math.floor((C-ps.length)/2)+i,ch));
+  }
+
+  document.getElementById('pre').textContent = g.map(r=>r.join('')).join('\n');
+
+  document.getElementById('sc').textContent   = G.score;
+  document.getElementById('lv').textContent   = '♥'.repeat(Math.max(0,G.lives))+'♡'.repeat(Math.max(0,3-G.lives));
+  document.getElementById('sh').textContent   = G.p1.shield>0?'███':'---';
+  document.getElementById('coins').textContent= totalCoins;
+  document.getElementById('nl').textContent   = G.level;
+  document.getElementById('wv').textContent   = G.wave;
+  document.getElementById('md').textContent   = G.mode.toUpperCase();
+  document.getElementById('skin-name').textContent = (SKINS.find(s=>s.id===activeSkin)||SKINS[0]).name;
+  document.getElementById('msg-bar').textContent   = G.msgT>0?G.msg:'';
+  document.getElementById('admin-btn').style.display = G.over?'none':'inline';
+}
+
+// ══════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function msg(txt,t){ G.msg=txt; G.msgT=t; }
+
+let _actx=null;
+function sfx(freq,dur,vol=.1,type='square'){
+  try{
+    if(!_actx) _actx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=_actx.createOscillator(), gn=_actx.createGain();
+    o.connect(gn); gn.connect(_actx.destination);
+    o.type=type; o.frequency.value=freq;
+    gn.gain.setValueAtTime(vol,_actx.currentTime);
+    gn.gain.exponentialRampToValueAtTime(.001,_actx.currentTime+dur);
+    o.start(); o.stop(_actx.currentTime+dur);
+  }catch(e){}
+}
+function sfxCoin(){ sfx(880,.05,.08,'sine'); setTimeout(()=>sfx(1100,.06,.08,'sine'),60); }
+function sfxLevelUp(){ [440,550,660,880].forEach((f,i)=>setTimeout(()=>sfx(f,.1,.1),i*70)); }
+function sfxDead(){ sfx(200,.1,.15,'sawtooth');setTimeout(()=>sfx(150,.12,.15,'sawtooth'),110);setTimeout(()=>sfx(100,.2,.15,'sawtooth'),230); }
+
+function coinPopup(txt){
+  const scr=document.getElementById('screen');
+  const el=document.createElement('span');
+  el.className='cpop'; el.textContent=txt;
+  el.style.left=(GX*7.8+10)+'px';
+  el.style.top=(clamp(G.p1.y,1,R-4)*18+10)+'px';
+  scr.appendChild(el);
+  setTimeout(()=>el.remove(),850);
+}
+
+// ══════════════════════════════════════════════════════
+// SHOOT
+// ══════════════════════════════════════════════════════
+let lastShot1=0, lastShot2=0;
+function shoot(owner){
+  const p=owner===1?G.p1:G.p2;
+  const y=clamp(p.y,1,R-4);
+  G.bullets.push({x:GX-1,y:y+1,owner});
+  if(p.double>0) G.bullets.push({x:GX-1,y:y,owner});
+  
+  if(activeSkin === 'laser') sfx(700, .04, .06, 'sine');
+  else if(activeSkin === 'rocket') sfx(300, .1, .15, 'sawtooth');
+  else if(activeSkin === 'sniper') sfx(500, .08, .12, 'triangle');
+  else sfx(440,.05);
+}
+
+// ══════════════════════════════════════════════════════
+// SPAWN CAIXA
+// ══════════════════════════════════════════════════════
+function spawnBox(){
+  const isBoss = G.kills>0&&G.kills%10===0&&!G.boxes.find(b=>b.type==='boss'&&b.dead===0);
+  if(isBoss){
+    G.boxes.push({x:3,y:R-5,vy:-0.04,hp:15,maxHp:15,type:'boss',dead:0,coin:false});
+    sfx(150,.3,.2,'sawtooth'); msg('⚠ CHEFE!',120); return;
+  }
+  const maxX=GX-8;
+  const x=Math.floor(Math.random()*(maxX-3))+2;
+  const armored=G.level>=3&&Math.random()<0.25;
+  const isCoin=!armored&&Math.random()<0.3; 
+  G.boxes.push({
+    x, y:R-4, vy:-(0.04+G.level*0.01+(G.wave-1)*0.005),
+    hp:armored?2:1, maxHp:armored?2:1,
+    type:armored?'armored':'normal', dead:0, coin:isCoin
+  });
+}
+
+function stampBoxDead(box) {
+  box.dead = 14;
+  G.kills++;
+  const coinAmt = box.coin ? 10 : 3;
+  earnCoins(coinAmt);
+  spawnCoinParticles(box.x, Math.round(box.y), coinAmt);
+  spawnPU(box.x + 2, Math.round(box.y) + 1);
+  if (box.type === 'boss') { sfxLevelUp(); msg('CHEFE DESTRUÍDO! +50🪙', 150); earnCoins(50); }
+}
+
+function spawnPU(x,y){
+  if(Math.random()>.35) return;
+  const types=['rapid','double','shield','bomb'];
+  G.powerups.push({
+    x, y, vy:-0.05,
+    type:types[Math.floor(Math.random()*types.length)],
+    life:100 
+  });
+}
+
+function applyPU(type,owner){
+  const p=owner===1?G.p1:G.p2;
+  if(type==='rapid')  p.rapid=300;
+  if(type==='double') p.double=300;
+  if(type==='shield') p.shield=500;
+  if(type==='bomb'){
+    G.boxes.forEach(b=>{if(!b.dead&&b.type!=='boss'){
+      earnCoins(b.coin?10:3); b.dead=12; G.score+=10; G.kills++;
+    }});
+    sfx(200,.3,.2,'sawtooth');
+  }
+  msg('P'+owner+': '+type.toUpperCase()+'!',100);
+  sfx(660,.06); setTimeout(()=>sfx(880,.08),70);
+}
+
+// ══════════════════════════════════════════════════════
+// MOEDAS
+// ══════════════════════════════════════════════════════
+function earnCoins(amount){
+  totalCoins+=amount;
+  G.sessionCoins+=amount;
+  saveCoins();
+  coinPopup('+'+amount+'🪙');
+  sfxCoin();
+  document.getElementById('coins').textContent=totalCoins;
+  document.getElementById('ov-coin-val').textContent=totalCoins;
+  document.getElementById('shop-coins').textContent=totalCoins;
+}
+
+function spawnCoinParticles(x,y,amount){
+  for(let i=0;i<Math.min(amount,3);i++){
+    G.coins.push({
+      x: x+Math.floor(Math.random()*4),
+      y: y+1,
+      vy:-0.06-Math.random()*0.04,
+      life:80
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// LOOP PRINCIPAL
+// ══════════════════════════════════════════════════════
+function loop(){
+  if(!G||G.over||G.paused) return;
+  G.frame++;
+  if(G.msgT>0) G.msgT--;
+  if(G.comboT>0){ G.comboT--; if(!G.comboT) G.combo=0; }
+  if(G.p1.rapid>0)  G.p1.rapid--;
+  if(G.p1.double>0) G.p1.double--;
+  if(G.p1.shield>0) G.p1.shield--;
+  if(G.p2.rapid>0)  G.p2.rapid--;
+  if(G.p2.double>0) G.p2.double--;
+  if(G.p2.shield>0) G.p2.shield--;
+
+  if(G.frame%3===0){
+    if(keys.has('up1')) G.p1.y=clamp(G.p1.y-1,1,R-4);
+    if(keys.has('dn1')) G.p1.y=clamp(G.p1.y+1,1,R-4);
+    if(G.mode==='coop'){
+      if(keys.has('up2')) G.p2.y=clamp(G.p2.y-1,1,R-4);
+      if(keys.has('dn2')) G.p2.y=clamp(G.p2.y+1,1,R-4);
+    }
+  }
+
+  // CADÊNCIA DINÂMICA: Laser agora possui um tempo muito menor entre disparos (6 frames em vez de 12)
+  let baseCd = 12;
+  if(activeSkin === 'laser') baseCd = 6;
+  else if(activeSkin === 'sniper') baseCd = 6;
+
+  const cd1=G.p1.rapid>0?3:baseCd, cd2=G.p2.rapid>0?3:baseCd;
+  if(keys.has('sh1')&&G.frame-lastShot1>=cd1){ shoot(1); lastShot1=G.frame; }
+  if(G.mode==='coop'&&keys.has('sh2')&&G.frame-lastShot2>=cd2){ shoot(2); lastShot2=G.frame; }
+
+  let bSpeed = activeSkin === 'sniper' ? 4 : 2;
+  G.bullets=G.bullets.filter(b=>{ b.x-=bSpeed; return b.x>0; });
+
+  G.coins.forEach(cn=>{
+    cn.y+=cn.vy; cn.life--;
+    const y1=clamp(G.p1.y,1,R-4);
+    if(Math.abs(Math.round(cn.y)-y1)<=2&&Math.abs(cn.x-GX)<=3) cn.life=0;
+  });
+  G.coins=G.coins.filter(cn=>cn.life>0);
+
+  G.boxes.forEach(box=>{
+    if(box.dead>0){ box.dead--; return; }
+    box.y+=box.vy;
+    if(box.y<=1){ box.vy=Math.abs(box.vy); box.y=1; }
+    if(box.y>=R-4){
+      box.y=R-4; box.dead=18;
+      if(G.mode==='zen'){ msg('PASSOU!',50); return; }
+      if(G.p1.shield>0){ G.p1.shield=0; msg('ESCUDO QUEBROU!',80); return; }
+      G.lives--;
+      sfxDead();
+      msg('VIDA PERDIDA! ('+G.lives+' restante'+(G.lives!==1?'s':'')+')',100);
+      if(G.lives<=0) endGame();
+    }
+  });
+
+  G.bullets.forEach(b=>{
+    let hitSomething = false;
+
+    G.boxes.forEach(box=>{
+      if(box.dead>0 || (activeSkin !== 'laser' && hitSomething)) return;
+
+      const by=Math.round(box.y);
+      const bw=box.type==='boss'?9:5, bh=box.type==='boss'?4:3;
+      const rowHit=b.y>=by&&b.y<by+bh;
+      const colHit=(b.x>=box.x&&b.x<box.x+bw)||(b.x+1>=box.x&&b.x+1<box.x+bw)||(b.x+2>=box.x&&b.x+2<box.x+bw);
+      
+      if(rowHit&&colHit){
+        hitSomething = true;
+        let dmg = 1;
+
+        if(activeSkin === 'default' && Math.random() < 0.20){
+          dmg = 2;
+          msg('💥 CRITICAL HIT (X2)!', 40);
+        }
+
+        if(activeSkin === 'sniper' && box.type !== 'boss' && Math.random() < 0.50){
+          dmg = box.hp;
+          msg('🎯 SNIPER CRÍTICO!', 50);
+        }
+
+        box.hp -= dmg;
+        sfx(220,.1,.12,'sawtooth');
+        G.combo++; G.comboT=80;
+        const pts=(box.type==='boss'?50:box.hp<box.maxHp?25:10)*G.level*Math.min(G.combo,5);
+        G.score+=pts;
+
+        if(box.hp<=0){
+          stampBoxDead(box);
+
+          if(activeSkin === 'rocket') {
+            sfx(160, .2, .2, 'sawtooth');
+            G.boxes.forEach(adjBox => {
+              if(adjBox.dead === 0 && adjBox !== box) {
+                if(Math.abs(adjBox.y - box.y) <= 3.5 && Math.abs(adjBox.x - box.x) <= 4) {
+                  adjBox.hp--;
+                  if(adjBox.hp <= 0) stampBoxDead(adjBox);
+                }
+              }
+            });
+            msg('🚀 DANO EM ÁREA!', 50);
+          }
+
+          const p = b.owner === 1 ? G.p1 : G.p2;
+          if(activeSkin === 'plasma') {
+            p.plasmaKills = (p.plasmaKills || 0) + 1;
+            if(p.plasmaKills >= 5) {
+              p.shield = Math.max(p.shield, 250);
+              p.plasmaKills = 0;
+              msg('🛡️ SHIELD CARREGADO!', 60);
+            }
+          }
+        }
+      }
+    });
+
+    if(hitSomething && activeSkin !== 'laser') {
+      b.x = -99;
+    }
+  });
+
+  G.bullets=G.bullets.filter(b=>b.x>0);
+
+  G.powerups.forEach(p=>{
+    p.y+=p.vy; p.life--; 
+    const y1=clamp(G.p1.y,1,R-4);
+    if(Math.round(p.y)>=y1&&Math.round(p.y)<=y1+2&&p.x>=GX-1&&p.x<=GX+3){ 
+      applyPU(p.type,1); p.life=0; 
+    }
+    if(G.mode==='coop'){
+      const y2=clamp(G.p2.y,1,R-4);
+      if(Math.round(p.y)>=y2&&Math.round(p.y)<=y2+2&&p.x>=GX-1&&p.x<=GX+3){ 
+        applyPU(p.type,2); p.life=0; 
+      }
+    }
+  });
+  G.powerups=G.powerups.filter(p=>p.life>0);
+
+  G.boxes=G.boxes.filter(b=>b.dead>0||b.hp>0);
+
+  const vivas=G.boxes.filter(b=>b.dead===0).length;
+  const delay=Math.max(40,100-G.level*5);
+  if(vivas<adminMaxBoxes&&G.frame-G.lastSpawn>delay){ spawnBox(); G.lastSpawn=G.frame; }
+
+  if(G.kills>=G.killGoal&&G.boxes.filter(b=>b.dead===0).length===0){
+    G.wave++; G.kills=0; G.killGoal=5+G.wave*2;
+    if(G.wave%3===0){ G.level++; sfxLevelUp(); msg('NÍVEL '+G.level+'! 🎉',120); }
+    else msg('WAVE '+G.wave+'!',100);
+  }
+  if(G.mode==='survival'&&G.wave>10){ msg('SOBREVIVEU! 🏆',300); setTimeout(()=>endGame(),2000); }
+
+  draw();
+}
+
+// ══════════════════════════════════════════════════════
+// KEYS
+// ══════════════════════════════════════════════════════
+const keys=new Set();
+document.addEventListener('keydown',e=>{
+  const k=e.key;
+  if(['w','W','s','S',' ','ArrowUp','ArrowDown','Enter'].includes(k)) e.preventDefault();
+  if(k==='w'||k==='W') keys.add('up1');
+  if(k==='s'||k==='S') keys.add('dn1');
+  if(k===' ')          keys.add('sh1');
+  if(k==='ArrowUp')    keys.add('up2');
+  if(k==='ArrowDown')  keys.add('dn2');
+  if(k==='Enter')      keys.add('sh2');
+  if((k==='p'||k==='P')&&G&&!G.over){
+    G.paused=!G.paused;
+    if(!G.paused) msg('',0); else msg('PAUSADO',9999);
+    draw();
+  }
+  if(k==='Escape'&&G&&!G.over) endGame(true);
+});
+document.addEventListener('keyup',e=>{
+  const k=e.key;
+  if(k==='w'||k==='W') keys.delete('up1');
+  if(k==='s'||k==='S') keys.delete('dn1');
+  if(k===' ')          keys.delete('sh1');
+  if(k==='ArrowUp')    keys.delete('up2');
+  if(k==='ArrowDown')  keys.delete('dn2');
+  if(k==='Enter')      keys.delete('sh2');
+});
+
+// ══════════════════════════════════════════════════════
+// START / END
+// ══════════════════════════════════════════════════════
+function startGame(mode){
+  if(timer) clearInterval(timer);
+  keys.clear(); lastShot1=0; lastShot2=0;
+  G=newGame(mode);
+  document.getElementById('ov').classList.add('hidden');
+  timer=setInterval(loop,1000/60);
+}
+
+function endGame(escaped=false){
+  if(!G) return;
+  G.over=true;
+  if(timer){ clearInterval(timer); timer=null; }
+  saveHS(G.mode,G.score,G.wave,G.level);
+  addRanking(G.mode,G.score,G.wave,G.level);
+  renderHS();
+  const ov=document.getElementById('ov');
+  ov.classList.remove('hidden');
+  const color=escaped?'#ffaa00':G.lives<=0?'#ff3333':'#00ff41';
+  const title=escaped?'SAIU':G.lives<=0?'GAME OVER':'FIM!';
+  ov.innerHTML=`
+    <h2 style="color:${color}">${title}</h2>
+    <p style="margin-bottom:6px">Pontos: ${G.score} | Wave ${G.wave} | Nível ${G.level}</p>
+    <p style="margin-bottom:20px;color:#ffd700">🪙 +${G.sessionCoins} moedas ganhas</p>
+    <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+      <button class="btn g" onclick="startGame('${G.mode}')">[ JOGAR DE NOVO ]</button>
+      <button class="btn gold" onclick="openShop()">[ 🪙 LOJA ]</button>
+      <button class="btn b" onclick="openRanking()">[ 🏆 RANKING ]</button>
+      <button class="btn a" onclick="showMenu()">[ MENU ]</button>
+    </div>
+    <div style="position:absolute;bottom:16px;right:20px;color:#ffd700;font-size:13px;letter-spacing:2px">🪙 <span id="ov-coin-val">${totalCoins}</span> moedas</div>`;
+}
+
+function showMenu(){
+  if(timer){ clearInterval(timer); timer=null; }
+  G=null;
+  const ov=document.getElementById('ov');
+  ov.classList.remove('hidden');
+  ov.innerHTML=`
+    <h2>ASCII SHOOTER</h2>
+    <p>SELECIONE O MODO</p>
+    <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-start">
+      <button class="btn g" onclick="startGame('normal')">[ NORMAL ]</button>
+      <button class="btn a" onclick="startGame('survival')">[ SOBREVIVÊNCIA ]</button>
+      <button class="btn b" onclick="startGame('zen')">[ ZEN ]</button>
+      <button class="btn p" onclick="startGame('coop')">[ CO-OP ]</button>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn gold" onclick="openShop()">[ 🪙 LOJA ]</button>
+        <button class="btn b" onclick="openRanking()">[ 🏆 RANKING ]</button>
+      </div>
+    </div>
+    <div id="ov-coin-val-wrap" style="position:absolute;bottom:16px;right:20px;color:#ffd700;font-size:13px;letter-spacing:2px">🪙 <span id="ov-coin-val">${totalCoins}</span> moedas</div>`;
+}
+
+// ══════════════════════════════════════════════════════
+// LOJA
+// ══════════════════════════════════════════════════════
+function openShop(){
+  document.getElementById('shop-coins').textContent=totalCoins;
+  const el=document.getElementById('shop-items');
+  el.innerHTML='';
+  SKINS.forEach(skin=>{
+    const owned=ownedSkins.includes(skin.id);
+    const active=activeSkin===skin.id;
+    const affordable=totalCoins>=skin.cost;
+    const spriteStr=skin.sprite.join(' | ');
+    el.innerHTML+=`
+    <div class="shop-item">
+      <div class="shop-info">
+        <div class="shop-name">${skin.name}</div>
+        <div class="shop-skin">Sprite: ${spriteStr}</div>
+        <div class="shop-desc" style="color: #ffaa00; font-size: 10px;">★ Especial: ${skin.spec}</div>
+      </div>
+      <span class="shop-price">${skin.cost===0?'GRÁTIS':'🪙'+skin.cost}</span>
+      ${active?'<span class="shop-owned" style="color:#ffd700">✓ ATIVA</span>':
+        owned?`<button class="btn g shop-buy" onclick="equipSkin('${skin.id}')">[ EQUIPAR ]</button>`:
+        `<button class="btn gold shop-buy" onclick="buySkin('${skin.id}')" ${affordable?'':'disabled style="opacity:.4;cursor:not-allowed"'}>[ COMPRAR ]</button>`}
+    </div>`;
+  });
+  document.getElementById('shop-modal').style.display='flex';
+}
+function closeShop(){ document.getElementById('shop-modal').style.display='none'; }
+
+function buySkin(id){
+  const skin=SKINS.find(s=>s.id===id);
+  if(!skin||totalCoins<skin.cost||ownedSkins.includes(id)) return;
+  totalCoins-=skin.cost; saveCoins();
+  ownedSkins.push(id); saveSkins();
+  equipSkin(id);
+}
+function equipSkin(id){
+  activeSkin=id; saveSkins();
+  document.getElementById('skin-name').textContent=(SKINS.find(s=>s.id===id)||SKINS[0]).name;
+  openShop();
+}
+
+// ══════════════════════════════════════════════════════
+// RANKING
+// ══════════════════════════════════════════════════════
+function addRanking(mode,score,wave,level){
+  rankingData.push({mode,score,wave,level,date:new Date().toLocaleDateString('pt-BR')});
+  rankingData.sort((a,b)=>b.score-a.score);
+  rankingData=rankingData.slice(0,20);
+  saveRanking();
+}
+function openRanking(){
+  const el=document.getElementById('rank-rows');
+  if(!rankingData.length){ el.innerHTML='<div style="color:#00aa2b;font-size:12px;padding:8px 0">Nenhum recorde ainda.<br>Jogue uma partida!</div>'; }
+  else {
+    const medals=['🥇','🥈','🥉'];
+    el.innerHTML=rankingData.slice(0,15).map((r,i)=>`
+      <div class="rank-row">
+        <span class="rank-pos">${medals[i]||('#'+(i+1))}</span>
+        <span class="rank-name">${r.date}</span>
+        <span class="rank-pts">🪙 ${r.score}pts</span>
+        <span class="rank-mode">${r.mode.toUpperCase()} W${r.wave}</span>
+      </div>`).join('');
+  }
+  document.getElementById('rank-modal').style.display='flex';
+}
+function closeRanking(){ document.getElementById('rank-modal').style.display='none'; }
+function clearRanking(){ if(confirm('Limpar todo o ranking?')){ rankingData=[]; saveRanking(); openRanking(); } }
+
+// ══════════════════════════════════════════════════════
+// HIGHSCORES LOCAIS
+// ══════════════════════════════════════════════════════
+function saveHS(mode,score,wave,level){
+  try{
+    const k='hs_'+mode;
+    const prev=lsGet(k,[]);
+    prev.push({score,wave,level});
+    prev.sort((a,b)=>b.score-a.score);
+    lsSet(k,prev.slice(0,3));
+  }catch(e){}
+}
+function renderHS(){
+  const el=document.getElementById('hsr');
+  const modes=['normal','survival','zen','coop'];
+  const labels={normal:'NORMAL',survival:'SOBREV.',zen:'ZEN',coop:'CO-OP'};
+  let html='';
+  modes.forEach(m=>{
+    const hs=lsGet('hs_'+m,[]);
+    if(hs.length) html+=`<div class="hr"><span>${labels[m]}</span><span class="hv">${hs[0].score}pts</span><span>wave ${hs[0].wave}</span></div>`;
+  });
+  el.innerHTML=html||'<span>Nenhum recorde ainda.</span>';
+}
+renderHS();
+document.getElementById('ov-coin-val').textContent=totalCoins;
+
+// ══════════════════════════════════════════════════════
+// ADMIN
+// ══════════════════════════════════════════════════════
+function openAdminLogin(){
+  if(adminUnlocked){ openAdminPanel(); return; }
+  document.getElementById('admin-login').style.display='flex';
+  document.getElementById('admin-pw').value='';
+  document.getElementById('admin-err').textContent='';
+  setTimeout(()=>document.getElementById('admin-pw').focus(),50);
+}
+function closeAdminLogin(){ document.getElementById('admin-login').style.display='none'; }
+function checkAdmin(){
+  if(document.getElementById('admin-pw').value==='admin'){
+    adminUnlocked=true; closeAdminLogin(); openAdminPanel();
+  } else {
+    document.getElementById('admin-err').textContent='SENHA INCORRETA!';
+    document.getElementById('admin-pw').value='';
+  }
+}
+function openAdminPanel(){
+  if(!G){ alert('Inicie um jogo primeiro!'); return; }
+  document.getElementById('a-score').value    = G.score;
+  document.getElementById('a-coins').value    = totalCoins;
+  document.getElementById('a-lives').value    = G.lives;
+  document.getElementById('a-level').value    = G.level;
+  document.getElementById('a-wave').value     = G.wave;
+  document.getElementById('a-shield').value   = G.p1.shield;
+  document.getElementById('a-rapid').value    = G.p1.rapid;
+  document.getElementById('a-double').value   = G.p1.double;
+  document.getElementById('a-boxspeed').value = (0.04+G.level*0.01).toFixed(2);
+  document.getElementById('a-maxbox').value   = adminMaxBoxes;
+  document.getElementById('a-mode').value     = G.mode;
+  document.getElementById('admin-panel').style.display='flex';
+}
+function closeAdminPanel(){ document.getElementById('admin-panel').style.display='none'; }
+function adminApply(){
+  if(!G) return;
+  G.score         = parseInt(document.getElementById('a-score').value)||0;
+  totalCoins      = parseInt(document.getElementById('a-coins').value)||0; saveCoins();
+  G.lives         = parseInt(document.getElementById('a-lives').value)||3;
+  G.level         = parseInt(document.getElementById('a-level').value)||1;
+  G.wave          = parseInt(document.getElementById('a-wave').value)||1;
+  G.p1.shield     = parseInt(document.getElementById('a-shield').value)||0;
+  G.p1.rapid      = parseInt(document.getElementById('a-rapid').value)||0;
+  G.p1.double     = parseInt(document.getElementById('a-double').value)||0;
+  G.mode          = document.getElementById('a-mode').value;
+  adminMaxBoxes   = parseInt(document.getElementById('a-maxbox').value)||3;
+  const spd       = parseFloat(document.getElementById('a-boxspeed').value)||0.04;
+  G.boxes.forEach(b=>{ if(b.dead===0) b.vy=b.vy<0?-spd:spd; });
+  draw(); closeAdminPanel(); msg('✓ ADMIN aplicado',120);
+}
+function adminNukeBoxes(){
+  if(!G) return;
+  G.boxes.forEach(b=>{ if(b.dead===0){ earnCoins(b.coin?10:3); b.dead=14; G.score+=10; G.kills++; } });
+  msg('💥 ADMIN: BOOM!',100);
+}
+function adminGiveCoins(){ totalCoins+=100; saveCoins(); document.getElementById('a-coins').value=totalCoins; msg('🪙 ADMIN: +100 moedas!',100); }
+function adminGiveShield(){ if(G){ G.p1.shield=9999; msg('🛡 ADMIN: escudo máximo!',100); } }
+function adminReset(){ const m=G?G.mode:'normal'; closeAdminPanel(); startGame(m); }
+</script>
+</body>
+</html>
